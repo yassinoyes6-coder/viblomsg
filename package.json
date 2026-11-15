@@ -1,0 +1,19 @@
+{
+  "name": "viblo-msg",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VIBLO-MSG — WhatsApp-style realtime messenger with accounts, chat requests, media and WebRTC calls",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "socket.io": "^4.8.1"
+  }
+}
