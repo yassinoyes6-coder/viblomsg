@@ -28,11 +28,34 @@ loadEnv();
 
 const PORT = Number(process.env.PORT || 3000);
 
-const PUBLIC_DIR = path.join(__dirname, 'public');
-const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(__dirname, 'data');
-const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(PUBLIC_DIR, 'uploads');
-fs.mkdirSync(DATA_DIR, { recursive: true });
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Locate the public folder (the server may be bundled into another directory, e.g. on Netlify).
+const PUBLIC_DIR =
+  [path.join(__dirname, 'public'), path.join(process.cwd(), 'public'), path.join(__dirname, '..', '..', 'public')].find(
+    (dir) => fs.existsSync(path.join(dir, 'index.html'))
+  ) || path.join(__dirname, 'public');
+
+// Create a writable directory. If the preferred location is missing or read-only
+// (for example the Netlify Server runtime), fall back to the OS temp directory.
+function ensureWritableDir(preferred, fallbackName) {
+  const candidates = [preferred, path.join(require('os').tmpdir(), fallbackName)];
+  for (const dir of candidates) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.accessSync(dir, fs.constants.W_OK);
+      return dir;
+    } catch {}
+  }
+  throw new Error(`No writable directory available for ${fallbackName}`);
+}
+
+const DATA_DIR = ensureWritableDir(
+  process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(__dirname, 'data'),
+  'viblomsg-data'
+);
+const UPLOAD_DIR = ensureWritableDir(
+  process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(PUBLIC_DIR, 'uploads'),
+  'viblomsg-uploads'
+);
 
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const SECRET_FILE = path.join(DATA_DIR, 'secret.txt');
@@ -44,7 +67,11 @@ const secret = (() => {
     if (fs.existsSync(SECRET_FILE)) return fs.readFileSync(SECRET_FILE, 'utf8').trim();
   } catch {}
   const s = crypto.randomBytes(32).toString('hex');
-  fs.writeFileSync(SECRET_FILE, s);
+  try {
+    fs.writeFileSync(SECRET_FILE, s);
+  } catch (err) {
+    console.error('Could not persist session secret:', err.message);
+  }
   return s;
 })();
 
