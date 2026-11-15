@@ -228,8 +228,17 @@ function peerLastSeen(peer) {
   const p = state.presence.get(peer.id);
   return p && p.lastSeen ? p.lastSeen : peer && peer.lastSeen;
 }
+const BACKEND_URL = (() => {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local') || host.endsWith('netlify.app')) {
+    return '';
+  }
+  return 'https://viblomsg.netlify.app';
+})();
+
 function mediaURL(url) {
-  return typeof url === 'string' && url.startsWith('/uploads/') ? url : '';
+  if (typeof url !== 'string' || !url.startsWith('/uploads/')) return '';
+  return BACKEND_URL ? (BACKEND_URL + url) : url;
 }
 function previewOf(msg) {
   if (!msg) return '';
@@ -247,7 +256,8 @@ async function api(path, opts = {}) {
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(body);
   }
-  const res = await fetch(path, { ...opts, headers, body });
+  const fullPath = (path.startsWith('http://') || path.startsWith('https://')) ? path : (BACKEND_URL + path);
+  const res = await fetch(fullPath, { ...opts, headers, body });
   let data = {};
   try { data = await res.json(); } catch {}
   if (res.status === 401 && state.token) {
@@ -333,7 +343,7 @@ function stopRingtone() {
 /* ============================ login ============================ */
 async function loadConfig() {
   try {
-    const res = await fetch('/api/config');
+    const res = await fetch(BACKEND_URL + '/api/config');
     if (res.ok) state.config = await res.json();
   } catch {}
 }
@@ -644,7 +654,13 @@ function openPeerProfile(peer) {
 /* ============================ socket ============================ */
 function connectSocket() {
   if (state.socket) { try { state.socket.disconnect(); } catch {} }
-  const socket = io({ auth: { token: state.token } });
+  const socket = typeof io !== 'undefined'
+    ? io(BACKEND_URL || undefined, { auth: { token: state.token }, transports: ['websocket', 'polling'] })
+    : null;
+  if (!socket) {
+    toast('تعذر تحميل مكتبة الاتصال. تحقق من اتصالك.', 'err');
+    return;
+  }
   state.socket = socket;
 
   socket.on('connect', () => {
@@ -1125,7 +1141,7 @@ function hideUploadProgress() {
 function uploadFile(file) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/upload');
+    xhr.open('POST', BACKEND_URL + '/api/upload');
     xhr.setRequestHeader('Authorization', 'Bearer ' + state.token);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
