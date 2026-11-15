@@ -230,10 +230,10 @@ function peerLastSeen(peer) {
 }
 const BACKEND_URL = (() => {
   const host = window.location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local') || host.endsWith('netlify.app')) {
+  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local') || host.endsWith('onrender.com') || host.endsWith('netlify.app')) {
     return '';
   }
-  return 'https://viblomsg.netlify.app';
+  return 'https://viblomsg.onrender.com';
 })();
 
 function mediaURL(url) {
