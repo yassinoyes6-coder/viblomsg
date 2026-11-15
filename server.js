@@ -28,9 +28,9 @@ loadEnv();
 
 const PORT = Number(process.env.PORT || 3000);
 
-const DATA_DIR = path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const UPLOAD_DIR = path.join(PUBLIC_DIR, 'uploads');
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(__dirname, 'data');
+const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(PUBLIC_DIR, 'uploads');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -245,14 +245,18 @@ app.use((req, res, next) => {
 });
 
 app.use(
+  '/uploads',
+  express.static(UPLOAD_DIR, {
+    etag: true,
+    maxAge: '365d',
+    immutable: true
+  })
+);
+
+app.use(
   express.static(PUBLIC_DIR, {
     etag: true,
-    maxAge: 0,
-    setHeaders(res, filePath) {
-      if (filePath.includes(`${path.sep}uploads${path.sep}`)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      }
-    }
+    maxAge: 0
   })
 );
 
@@ -706,17 +710,21 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'خطأ في الخادم.' });
 });
 
-server.listen(PORT, () => {
-  console.log('');
-  console.log('  ██╗   ██╗██╗██████╗ ██╗      ██████╗       ███╗   ███╗███████╗ ██████╗');
-  console.log('  ██║   ██║██║██╔══██╗██║     ██╔═══██╗      ████╗ ████║██╔════╝██╔════╝');
-  console.log('  ██║   ██║██║██████╔╝██║     ██║   ██║█████╗██╔████╔██║███████╗██║  ███╗');
-  console.log('  ╚██╗ ██╔╝██║██╔══██╗██║     ██║   ██║╚════╝██║╚██╔╝██║╚════██║██║   ██║');
-  console.log('   ╚████╔╝ ██║██████╔╝███████╗╚██████╔╝      ██║ ╚═╝ ██║███████║╚██████╔╝');
-  console.log('    ╚═══╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝       ╚═╝     ╚═╝╚══════╝ ╚═════╝');
-  console.log('');
-  console.log(`  ✅  VIBLO-MSG يعمل الآن على:  http://localhost:${PORT}`);
-  console.log('  🔐  تسجيل الحسابات وكلمات المرور: مُفعّل');
-  console.log('  💬  سجّل حساباً جديداً أو ادخل بحسابك من صفحة الدخول.');
-  console.log('');
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log('');
+    console.log('  ██╗   ██╗██╗██████╗ ██╗      ██████╗       ███╗   ███╗███████╗ ██████╗');
+    console.log('  ██║   ██║██║██╔══██╗██║     ██╔═══██╗      ████╗ ████║██╔════╝██╔════╝');
+    console.log('  ██║   ██║██║██████╔╝██║     ██║   ██║█████╗██╔████╔██║███████╗██║  ███╗');
+    console.log('  ╚██╗ ██╔╝██║██╔══██╗██║     ██║   ██║╚════╝██║╚██╔╝██║╚════██║██║   ██║');
+    console.log('   ╚████╔╝ ██║██████╔╝███████╗╚██████╔╝      ██║ ╚═╝ ██║███████║╚██████╔╝');
+    console.log('    ╚═══╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝       ╚═╝     ╚═╝╚══════╝ ╚═════╝');
+    console.log('');
+    console.log(`  ✅  VIBLO-MSG يعمل الآن على:  http://localhost:${PORT}`);
+    console.log('  🔐  تسجيل الحسابات وكلمات المرور: مُفعّل');
+    console.log('  💬  سجّل حساباً جديداً أو ادخل بحسابك من صفحة الدخول.');
+    console.log('');
+  });
+}
+
+module.exports = { app, server, io };

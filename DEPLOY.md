@@ -63,6 +63,25 @@ https://viblomsg.onrender.com
 - **الجلسات:** `SESSION_SECRET` يُولَّد تلقائياً ويبقى ثابتاً، لذا لا تنتهي الجلسات عند كل نشر.
 - **إبقاء الخدمة مستيقظة (اختياري):** استخدم خدمة Ping مجانية مثل [cron-job.org](https://cron-job.org) لفتح `https://viblomsg.onrender.com/api/config` كل 10 دقائق.
 
+## بديل: Netlify Server (Early Access)
+
+أضفتُ دعم النشر على **Netlify Server** الجديد (وليس Netlify static/functions التقليدي)، لأنه يدعم خادماً دائماً وWebSocket:
+
+- الملفات الجاهزة: `netlify.toml` و`netlify/server/index.js`.
+- يتطلب Node.js 24 (مضبوط في `netlify.toml`).
+- متاح مجاناً أثناء Early Access على الخطة المجانية (نسخة خادم واحدة).
+- الرابط سيكون بصيغة `https://<اسم-المشروع>.netlify.app`.
+
+خطوات النشر:
+
+1. ارفع المشروع إلى GitHub (الخطوات أعلاه).
+2. [app.netlify.com](https://app.netlify.com) → **Add new project** → **Import an existing project** → اختر GitHub ثم المستودع.
+3. Netlify سيقرأ `netlify.toml` تلقائياً (Build: `npm ci` — Publish: `public`).
+4. اضغط **Deploy**.
+
+> **تنبيه:** Netlify Server في مرحلة Early Access (أُطلق في 10 نوفمبر 2026)، وقد لا يكون مفعّلاً لكل الحسابات. التخزين مؤقت أيضاً: كل نسخة خادم تعيش 8 ساعات كحد أقصى وتُفقد البيانات والملفات بعدها. إن لم يظهر خيار Server في حسابك، استخدم Render.
+
 ## بديل سريع بدون GitHub
+
 
 إذا واجهت مشكلة في الرفع، أخبرني وسنجهّز النشر مباشرة عبر واجهة Render بعد رفع المشروع يدوياً من موقع GitHub (Add file → Upload files).

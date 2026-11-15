@@ -1,0 +1,10 @@
+[build]
+  command = "npm ci"
+  publish = "public"
+
+[build.environment]
+  # Netlify Server requires Node.js 24 or later
+  NODE_VERSION = "24"
+  # Writable temporary storage (ephemeral, erased when the instance restarts)
+  DATA_DIR = "/tmp/viblomsg-data"
+  UPLOAD_DIR = "/tmp/viblomsg-uploads"
