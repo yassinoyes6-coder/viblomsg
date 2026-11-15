@@ -10,6 +10,6 @@ services:
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 22.14.0
+        value: 22
       - key: SESSION_SECRET
         generateValue: true
