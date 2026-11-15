@@ -228,13 +228,7 @@ function peerLastSeen(peer) {
   const p = state.presence.get(peer.id);
   return p && p.lastSeen ? p.lastSeen : peer && peer.lastSeen;
 }
-const BACKEND_URL = (() => {
-  const host = window.location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local') || host.endsWith('onrender.com') || host.endsWith('netlify.app')) {
-    return '';
-  }
-  return 'https://viblomsg.onrender.com';
-})();
+const BACKEND_URL = '';
 
 function mediaURL(url) {
   if (typeof url !== 'string' || !url.startsWith('/uploads/')) return '';
@@ -651,16 +645,89 @@ function openPeerProfile(peer) {
   openModal('profileModal');
 }
 
-/* ============================ socket ============================ */
+/* ============================ realtime bridge ============================ */
+class CloudflareRealtimeBridge {
+  constructor(token) {
+    this.token = token;
+    this.handlers = new Map();
+    this.lastPoll = Date.now() - 5000;
+    this.running = true;
+    this.pollTimer = null;
+    this.schedulePoll(200);
+    setTimeout(() => this.trigger('connect'), 50);
+  }
+
+  on(event, handler) {
+    if (!this.handlers.has(event)) this.handlers.set(event, []);
+    this.handlers.get(event).push(handler);
+  }
+
+  trigger(event, data) {
+    const list = this.handlers.get(event) || [];
+    for (const fn of list) {
+      try { fn(data); } catch (e) { console.error(e); }
+    }
+  }
+
+  emit(event, payload, ack) {
+    if (event === 'message:send') {
+      api(`/api/conversations/${payload.convId}/messages`, { method: 'POST', body: payload })
+        .then((res) => {
+          if (ack) ack({ ok: true, message: res.message });
+        })
+        .catch((err) => {
+          if (ack) ack({ ok: false, error: err.message });
+        });
+      return;
+    }
+    if (event === 'typing') {
+      const conv = state.convs.get(payload.convId);
+      if (!conv || !conv.peer) return;
+      api('/api/events/send', {
+        method: 'POST',
+        body: { type: 'typing', to: conv.peer.id, payload: { convId: payload.convId, typing: !!payload.typing } }
+      }).catch(() => {});
+      return;
+    }
+    if (event.startsWith('call:')) {
+      const to = payload.to || (state.call && state.call.peerId) || (state.incomingCall && state.incomingCall.from && state.incomingCall.from.id);
+      if (to) {
+        api('/api/events/send', {
+          method: 'POST',
+          body: { type: event, to, payload }
+        }).catch(() => {});
+      }
+      if (ack) ack({ ok: true });
+      return;
+    }
+  }
+
+  schedulePoll(ms = 1500) {
+    if (!this.running) return;
+    this.pollTimer = setTimeout(async () => {
+      if (!this.running) return;
+      try {
+        const res = await api(`/api/events/poll?since=${this.lastPoll}`);
+        if (res && res.now) {
+          this.lastPoll = res.now;
+          for (const ev of res.events || []) {
+            this.trigger(ev.type, ev.payload);
+          }
+        }
+      } catch (err) {}
+      this.schedulePoll(1500);
+    }, ms);
+  }
+
+  disconnect() {
+    this.running = false;
+    if (this.pollTimer) clearTimeout(this.pollTimer);
+  }
+}
+
 function connectSocket() {
   if (state.socket) { try { state.socket.disconnect(); } catch {} }
-  const socket = typeof io !== 'undefined'
-    ? io(BACKEND_URL || undefined, { auth: { token: state.token }, transports: ['websocket', 'polling'] })
-    : null;
-  if (!socket) {
-    toast('تعذر تحميل مكتبة الاتصال. تحقق من اتصالك.', 'err');
-    return;
-  }
+  const socket = new CloudflareRealtimeBridge(state.token);
   state.socket = socket;
 
   socket.on('connect', () => {

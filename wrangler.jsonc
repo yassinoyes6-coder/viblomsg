@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "viblomsg",
+  "compatibility_date": "2026-11-13",
+  "pages_build_output_dir": "public",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "viblo-msg-db",
+      "database_id": "e430862c-299b-47ed-841b-628f0f14e9db"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "1450a9daf9c843b9b48d248964a27a2a"
+    }
+  ]
+}
