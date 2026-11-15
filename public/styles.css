@@ -716,3 +716,18 @@ a{color:inherit;text-decoration:none}
   .empty-logo svg{width:52px;height:52px}
   .msg-media img,.msg-media video{max-height:300px}
 }
+
+/* إخفاء شارة نيتليفاي (Netlify Drawer / Badge) لمنع حجب الأزرار */
+iframe[src*="netlify"],
+iframe[id*="netlify"],
+netlify-drawer,
+[data-netlify-drawer],
+#netlify-drawer,
+.netlify-badge {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  z-index: -9999 !important;
+}
